@@ -1,7 +1,7 @@
-use core::hash::{Hash, Hasher};
-use core::hash::BuildHasher;
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
+use core::hash::BuildHasher;
+use core::hash::{Hash, Hasher};
 
 const FNV_OFFSET_BASIS: u64 = 0xcbf29ce484222325;
 const FNV_PRIME: u64 = 0x100000001b3;
@@ -51,51 +51,56 @@ where
         const INITIAL_CAPACITY: usize = 16; // 初始桶数量
         Self {
             buckets: (0..INITIAL_CAPACITY).map(|_| Vec::new()).collect(),
-            build_hasher: FnvBuildHasher,
+            build_hasher: FnvBuildHasher::default(),
             len: 0,
         }
     }
-    /// 插入键值对，如果键已存在则替换旧值
+    /// 插入键值对，如果键已存在则替换旧值，并返回旧值  成功返回 None
     pub fn insert(&mut self, key: K, value: V) -> Option<V> {
-        // 1. 计算哈希值
+        // 1. 计算hash
         let mut hasher = self.build_hasher.build_hasher();
         key.hash(&mut hasher);
         let hash = hasher.finish();
-        // 2. 计算桶索引
-        let bucket_index = (hash % self.buckets.len() as u64) as usize;
-        let bucket = &mut self.buckets[bucket_index];
 
-        // 3. 检查是否已存在该键
-        for (i, (k, v)) in bucket.iter_mut().enumerate() {
-            if *k == key {
-                let old_value = core::mem::replace(v, value);
-                return Some(old_value);
-            }
+        // 2. 计算索引
+        let index = (hash % self.buckets.len() as u64) as usize;
+        let bucket = &mut self.buckets[index];
+
+        // 3. 查询如果存在则更新value，否则插入
+        if let Some((_, v)) = bucket.iter_mut().find(|(k, _)| *k == key) {
+            let old_value = core::mem::replace(v, value);
+            return Some(old_value);
         }
 
-        // 4. 不存在则插入新键值对
         bucket.push((key, value));
         self.len += 1;
+
         None
     }
     /// 获取键对应的值
     pub fn get(&self, key: &K) -> Option<&V> {
+        // 1. 计算hash
         let mut hasher = self.build_hasher.build_hasher();
         key.hash(&mut hasher);
         let hash = hasher.finish();
-        let bucket_index = (hash % self.buckets.len() as u64) as usize;
-        self.buckets[bucket_index]
+
+        // 2. 计算索引
+        let index = (hash % self.buckets.len() as u64) as usize;
+        self.buckets[index]
             .iter()
             .find(|(k, _)| k == key)
             .map(|(_, v)| v)
     }
     /// 获取键对应的可变值
     pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
+        // 1. 计算hash
         let mut hasher = self.build_hasher.build_hasher();
         key.hash(&mut hasher);
         let hash = hasher.finish();
-        let bucket_index = (hash % self.buckets.len() as u64) as usize;
-        self.buckets[bucket_index]
+
+        // 2. 计算索引
+        let index = (hash % self.buckets.len() as u64) as usize;
+        self.buckets[index]
             .iter_mut()
             .find(|(k, _)| k == key)
             .map(|(_, v)| v)
