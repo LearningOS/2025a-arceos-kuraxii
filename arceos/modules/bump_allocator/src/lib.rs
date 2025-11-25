@@ -109,7 +109,7 @@ impl<const PAGE_SIZE: usize> PageAllocator for EarlyAllocator<PAGE_SIZE> {
         }
 
         self.p_pos = start;
-        start
+        Ok(start)
     }
 
     fn dealloc_pages(&mut self, pos: usize, num_pages: usize) {
