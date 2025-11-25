@@ -1,4 +1,3 @@
-#[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 use core::hash::BuildHasher;
 use core::hash::{Hash, Hasher};
@@ -42,10 +41,8 @@ pub struct HashMap<K, V> {
     build_hasher: FnvBuildHasher,
     len: usize, // 记录元素数量
 }
-impl<K, V> HashMap<K, V>
-where
-    K: Hash + Eq, // 要求 Key 可哈希且可比较
-{
+
+impl<K, V> HashMap<K, V>{
     /// 创建一个新的空 HashMap
     pub fn new() -> Self {
         const INITIAL_CAPACITY: usize = 16; // 初始桶数量
@@ -55,6 +52,34 @@ where
             len: 0,
         }
     }
+
+    /// 返回元素数量
+    pub fn len(&self) -> usize {
+        self.len
+    }
+    /// 判断是否为空
+    pub fn is_empty(&self) -> bool {
+        self.len == 0
+    }
+    /// 创建一个迭代器
+    pub fn iter(&self) -> impl Iterator<Item = (&K, &V)> {
+        self.buckets
+            .iter()
+            .flat_map(|bucket| bucket.iter().map(|(k, v)| (k, v)))
+    }
+    /// 创建一个可变迭代器
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (&K, &mut V)> {
+        self.buckets
+            .iter_mut()
+            .flat_map(|bucket| bucket.iter_mut().map(|(k, v)| (&*k, v)))
+    }
+}
+
+impl<K, V> HashMap<K, V>
+where
+    K: Hash + Eq, // 要求 Key 可哈希且可比较
+{
+    
     /// 插入键值对，如果键已存在则替换旧值，并返回旧值  成功返回 None
     pub fn insert(&mut self, key: K, value: V) -> Option<V> {
         // 1. 计算hash
@@ -105,31 +130,10 @@ where
             .find(|(k, _)| k == key)
             .map(|(_, v)| v)
     }
-    /// 返回元素数量
-    pub fn len(&self) -> usize {
-        self.len
-    }
-    /// 判断是否为空
-    pub fn is_empty(&self) -> bool {
-        self.len == 0
-    }
-    /// 创建一个迭代器
-    pub fn iter(&self) -> impl Iterator<Item = (&K, &V)> {
-        self.buckets
-            .iter()
-            .flat_map(|bucket| bucket.iter().map(|(k, v)| (k, v)))
-    }
-    /// 创建一个可变迭代器
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = (&K, &mut V)> {
-        self.buckets
-            .iter_mut()
-            .flat_map(|bucket| bucket.iter_mut().map(|(k, v)| (&*k, v)))
-    }
+    
 }
 // 为 HashMap 实现 Default
 impl<K, V> Default for HashMap<K, V>
-where
-    K: Hash + Eq,
 {
     fn default() -> Self {
         Self::new()
