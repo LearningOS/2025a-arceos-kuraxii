@@ -67,6 +67,19 @@ impl DirNode {
         children.remove(name);
         Ok(())
     }
+
+    pub fn rename_node(&self, src_name: &str, dst_name: &str) -> VfsResult {
+        if self.exist(dst_name) {
+            log::error!("AlreadyExists {}", dst_name);
+            return Err(VfsError::AlreadyExists);
+        }
+        let mut children = self.children.write();
+        let node = children.remove(src_name).unwrap();
+        
+        children.insert(dst_name.into(), node);
+
+        Ok(())
+    }
 }
 
 impl VfsNodeOps for DirNode {
@@ -165,6 +178,50 @@ impl VfsNodeOps for DirNode {
         }
     }
 
+    fn rename(&self, src_path: &str, dst_path: &str) -> VfsResult {
+        // `src_path` and `dst_path` should in the same mounted fs
+        log::debug!(
+            "rename at ramfs, src_path: {}, dst_path: {}",
+            src_path,
+            dst_path
+        );
+
+        // 提取出dst 文件名
+        let mut dst_path = dst_path;
+        let final_name = loop {
+            let (name, rest) = split_path(dst_path);
+            match rest {
+                None => break name,
+                Some(reset) => dst_path = reset,
+            }
+        };
+
+        if final_name.is_empty() || final_name == "." || final_name == ".." {
+            return Err(VfsError::InvalidInput);
+        }
+
+        // 获取 src_path entry 并进行rename操作
+        let (name, rest) = split_path(src_path);
+        if let Some(rest) = rest {
+            match name {
+                "" | "." => self.remove(rest),
+                ".." => self.parent().ok_or(VfsError::NotFound)?.remove(rest),
+                _ => {
+                    let subdir = self
+                        .children
+                        .read()
+                        .get(name)
+                        .ok_or(VfsError::NotFound)?
+                        .clone();
+                    subdir.rename(rest, final_name)
+                }
+            }
+        } else if name.is_empty() || name == "." || name == ".." {
+            Err(VfsError::InvalidInput) // remove '.' or '..
+        } else {
+            self.rename_node(name, final_name)
+        }
+    }
     axfs_vfs::impl_vfs_dir_default! {}
 }
 

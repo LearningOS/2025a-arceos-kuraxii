@@ -3,15 +3,13 @@
 use arceos_posix_api as api;
 use axerrno::LinuxError;
 use axhal::arch::TrapFrame;
-use axhal::mem::phys_to_virt;
 use axhal::paging::MappingFlags;
 use axhal::trap::{register_trap_handler, SYSCALL};
 use axtask::current;
 use axtask::TaskExtRef;
 use core::ffi::{c_char, c_int, c_void};
-use std::io::SeekFrom;
 use memory_addr::{
-    align_up, align_up_4k, AddrRange, MemoryAddr, VirtAddr, VirtAddrRange, PAGE_SIZE_4K,
+    align_up_4k, MemoryAddr, VirtAddr,
 };
 const SYS_IOCTL: usize = 29;
 const SYS_OPENAT: usize = 56;
