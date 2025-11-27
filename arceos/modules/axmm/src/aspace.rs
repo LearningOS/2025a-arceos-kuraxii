@@ -32,6 +32,10 @@ impl AddrSpace {
         self.va_range.end
     }
 
+    pub const fn range(&self) -> VirtAddrRange {
+        self.va_range
+    }
+
     /// Returns the address space size.
     pub fn size(&self) -> usize {
         self.va_range.size()

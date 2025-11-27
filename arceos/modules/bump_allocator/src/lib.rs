@@ -49,7 +49,7 @@ impl<const PAGE_SIZE: usize> BaseAllocator for EarlyAllocator<PAGE_SIZE> {
 
     fn add_memory(&mut self, start: usize, size: usize) -> allocator::AllocResult {
         todo!()
-    }
+    }  
 }
 
 impl<const PAGE_SIZE: usize> ByteAllocator for EarlyAllocator<PAGE_SIZE> {
