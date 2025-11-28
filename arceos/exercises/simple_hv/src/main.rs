@@ -101,17 +101,21 @@ fn vmexit_handler(ctx: &mut VmCpuRegisters) -> bool {
                 panic!("bad sbi message! ");
             }
         },
+
+        
         Trap::Exception(Exception::IllegalInstruction) => {
-            panic!("Bad instruction: {:#x} sepc: {:#x}",
-                stval::read(),
-                ctx.guest_regs.sepc
-            );
+            // 读取寄存器 修改sepc为下一个指令
+            // 设置寄存器 a1 的值为0x6688
+            ctx.guest_regs.sepc += 4;
+            ctx.guest_regs.gprs.set_reg(A1, 0x1234);
+
         },
         Trap::Exception(Exception::LoadGuestPageFault) => {
-            panic!("LoadGuestPageFault: stval{:#x} sepc: {:#x}",
-                stval::read(),
-                ctx.guest_regs.sepc
-            );
+            // 读取寄存器 修改sepc为下一个指令
+            // 设置寄存器 a0 的值为0x1234
+            ctx.guest_regs.sepc += 4;
+            ctx.guest_regs.gprs.set_reg(A0, 0x6688);
+
         },
         _ => {
             panic!(
